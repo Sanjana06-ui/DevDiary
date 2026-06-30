@@ -310,7 +310,7 @@ const EditEntry = () => {
                     <div className="flex items-center gap-2 text-sm text-primary font-semi mb-3">
                       <Link to="/dashboard" className="hover:text-primary-light transition-colors">Dashboard</Link>
                       <span className="text-muted">/</span>
-                      <span className="text-muted">My Entries</span>
+                      <Link to="/entries" className="hover:text-primary-light transition-colors">My Entries</Link>
                       <span className="text-muted">/</span>
                       <span className="text-muted">Edit Entry</span>
                     </div>

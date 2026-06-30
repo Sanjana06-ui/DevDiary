@@ -1,9 +1,10 @@
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import Button from '../../components/Button/Button'
 import './Login.css'
 
 const Login = () => {
+  const navigate = useNavigate()
   const [formData, setFormData] = useState({ email: '', password: '', rememberMe: false })
   const [errors, setErrors] = useState({})
   const [showPassword, setShowPassword] = useState(false)
@@ -39,7 +40,7 @@ const Login = () => {
     setTimeout(() => {
       setIsLoading(false)
       console.log('Login attempt with:', formData)
-      // Normally redirect here
+      navigate('/dashboard')
     }, 1200)
   }
 

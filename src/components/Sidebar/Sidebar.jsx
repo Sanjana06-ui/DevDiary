@@ -27,7 +27,8 @@ const Sidebar = () => {
           <p className="text-xs font-semi text-muted uppercase tracking-wide px-3 mb-2">Menu</p>
           
           {navItems.map((item) => {
-            const isActive = location.pathname === item.path
+            const isActive = location.pathname === item.path || 
+              (item.path === '/entries' && location.pathname.startsWith('/edit-entry'))
             return (
               <Link 
                 key={item.name} 

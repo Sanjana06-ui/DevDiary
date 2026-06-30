@@ -1,9 +1,10 @@
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import Button from '../../components/Button/Button'
 import './Register.css'
 
 const Register = () => {
+  const navigate = useNavigate()
   const [formData, setFormData] = useState({ 
     name: '', 
     email: '', 
@@ -81,6 +82,7 @@ const Register = () => {
     setTimeout(() => {
       setIsLoading(false)
       console.log('Registration attempt with:', formData)
+      navigate('/dashboard')
     }, 1200)
   }
 
