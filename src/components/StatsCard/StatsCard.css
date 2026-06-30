@@ -1,40 +1,23 @@
-/* StatsCard styles – to be designed */
+/* StatsCard Specific Styles */
 .stats-card {
-  padding: var(--space-6);
+  padding: var(--sp-5);
   display: flex;
-  align-items: center;
-  gap: var(--space-4);
+  flex-direction: column;
 }
 
 .stats-card__icon {
-  font-size: 2.5rem;
-  flex-shrink: 0;
-}
-
-.stats-card__body {
+  width: 40px;
+  height: 40px;
   display: flex;
-  flex-direction: column;
-  gap: var(--space-1);
-}
-
-.stats-card__label {
-  font-size: var(--font-size-sm);
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-md);
   color: var(--color-text-secondary);
-  font-weight: 500;
+  background: rgba(255,255,255,0.05);
 }
 
-.stats-card__value {
-  font-size: var(--font-size-2xl);
-  font-weight: 700;
-  color: var(--color-text-primary);
-  line-height: 1;
-}
-
-.stats-card__trend {
-  font-size: var(--font-size-xs);
-  font-weight: 600;
-}
+.stats-card__value { line-height: 1; }
 
 .stats-card__trend--up      { color: var(--color-success); }
 .stats-card__trend--down    { color: var(--color-error); }
-.stats-card__trend--neutral { color: var(--color-text-secondary); }
+.stats-card__trend--neutral { color: var(--color-text-muted); }
