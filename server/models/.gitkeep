@@ -1,0 +1,3 @@
+# Mongoose models will be added in future phases.
+# Each model file defines the schema for a MongoDB collection.
+# Example: User.js, Entry.js

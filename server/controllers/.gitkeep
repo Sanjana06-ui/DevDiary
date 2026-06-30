@@ -1,0 +1,3 @@
+# Controllers will be added in future phases.
+# Each controller file handles the business logic for a specific resource.
+# Example: authController.js, entryController.js

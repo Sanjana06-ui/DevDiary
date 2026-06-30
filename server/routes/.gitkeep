@@ -1,0 +1,3 @@
+# Route files will be added in future phases.
+# Each route file maps HTTP endpoints to controller functions.
+# Example: authRoutes.js, entryRoutes.js
