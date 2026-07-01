@@ -12,6 +12,12 @@
 
 const express = require("express");
 const router = express.Router();
+const rateLimit = require("express-rate-limit");
+
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 5,
+});
 
 const { registerUser, loginUser } = require("../controllers/authController");
 
@@ -19,6 +25,6 @@ const { registerUser, loginUser } = require("../controllers/authController");
 router.post("/register", registerUser);
 
 // POST /api/auth/login
-router.post("/login", loginUser);
+router.post("/login", loginLimiter, loginUser);
 
 module.exports = router;

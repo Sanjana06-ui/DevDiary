@@ -21,6 +21,8 @@ require("dotenv").config();
 // ----------------------------
 const express = require("express");
 const cors = require("cors");
+const helmet = require("helmet");
+const rateLimit = require("express-rate-limit");
 
 // ----------------------------
 // 3. Import Internal Modules
@@ -48,11 +50,24 @@ connectDB();
 // 6. Configure Middleware
 // ----------------------------
 
+// Set security HTTP headers
+app.use(helmet());
+
+// Apply global rate limiting
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // limit each IP to 100 requests per windowMs
+});
+app.use(limiter);
+
 // Parse incoming JSON request bodies → populates req.body
 app.use(express.json());
 
 // Enable CORS so the frontend (on a different origin) can reach this API
-app.use(cors());
+app.use(cors({
+    origin: process.env.FRONTEND_URL,
+    credentials: true
+}));
 
 // ----------------------------
 // 7. API Routes

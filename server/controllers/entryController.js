@@ -76,6 +76,9 @@ const getEntryById = async (req, res) => {
 
     res.status(200).json(entry);
   } catch (error) {
+    if (error.name === "CastError") {
+      return res.status(400).json({ success: false, message: "Invalid entry ID." });
+    }
     res.status(500).json({ message: error.message });
   }
 };
@@ -106,6 +109,9 @@ const updateEntry = async (req, res) => {
 
     res.status(200).json(updatedEntry);
   } catch (error) {
+    if (error.name === "CastError") {
+      return res.status(400).json({ success: false, message: "Invalid entry ID." });
+    }
     res.status(500).json({ message: error.message });
   }
 };
@@ -129,6 +135,9 @@ const deleteEntry = async (req, res) => {
 
     res.status(200).json({ message: "Entry deleted successfully" });
   } catch (error) {
+    if (error.name === "CastError") {
+      return res.status(400).json({ success: false, message: "Invalid entry ID." });
+    }
     res.status(500).json({ message: error.message });
   }
 };
