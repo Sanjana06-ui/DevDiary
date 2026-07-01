@@ -5,56 +5,91 @@
   left: 0;
   width: var(--sidebar-width);
   height: calc(100vh - var(--navbar-height));
-  background: var(--color-surface);
+  background: var(--color-surface-2); /* Clean secondary background */
   border-right: 1px solid var(--color-border);
   border-top: none;
   border-bottom: none;
   border-left: none;
   border-radius: 0;
   z-index: 90;
-  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: transform 0.25s var(--ease-out);
   overflow-y: auto;
+}
+
+.sidebar__inner {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  justify-content: space-between;
+}
+
+.sidebar__nav {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: var(--sp-4);
+}
+
+.sidebar__nav p {
+  padding-left: 8px;
+  font-size: 11px;
+  font-weight: var(--fw-bold);
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: var(--sp-2);
 }
 
 .sidebar__link {
   display: flex;
   align-items: center;
   gap: var(--sp-3);
-  padding: var(--sp-3) var(--sp-4);
+  padding: 8px 12px;
   color: var(--color-text-secondary);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-sm);
   text-decoration: none;
-  transition: var(--transition-base);
+  transition: var(--transition-fast);
   font-weight: var(--fw-medium);
   font-size: var(--fs-sm);
+  border: 1px solid transparent;
 }
 
 .sidebar__link:hover {
-  background: rgba(255,255,255,0.05);
+  background: rgba(255, 255, 255, 0.04);
   color: var(--color-text-primary);
 }
 
 .sidebar__icon {
   display: flex;
   align-items: center;
-  opacity: 0.7;
-  transition: var(--transition-base);
+  opacity: 0.65;
+  transition: var(--transition-fast);
 }
 
 .sidebar__link:hover .sidebar__icon {
   opacity: 1;
-  color: var(--color-primary-light);
+  color: var(--color-primary);
 }
 
 .sidebar__link--active {
-  background: var(--gradient-surface);
-  color: var(--color-primary-light);
-  border: 1px solid var(--color-border);
-  box-shadow: var(--shadow-inset);
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--color-text-primary);
+  border: 1px solid rgba(255, 255, 255, 0.05);
 }
+
 .sidebar__link--active .sidebar__icon {
   opacity: 1;
   color: var(--color-primary);
+}
+
+.sidebar__footer {
+  padding: var(--sp-4);
+}
+
+.sidebar__footer .divider {
+  height: 1px;
+  background: var(--color-border);
+  margin: var(--sp-3) 0;
 }
 
 @media (max-width: 1024px) {

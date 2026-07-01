@@ -6,20 +6,23 @@
 
 .edit-entry-container {
   padding-bottom: var(--sp-16);
-  animation: fadeIn 0.4s var(--ease-out) forwards;
+  animation: fadeIn 0.3s var(--ease-out) forwards;
 }
 
 /* Page Layout Grid */
 .edit-entry-grid {
   display: grid;
-  grid-template-columns: 1.25fr 0.75fr;
-  gap: var(--sp-8);
+  grid-template-columns: 1.2fr 0.8fr;
+  gap: var(--sp-6);
   align-items: start;
 }
 
 .form-panel {
-  padding: var(--sp-8);
-  border-radius: var(--radius-xl);
+  padding: var(--sp-6);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
 }
 
 .preview-panel {
@@ -39,16 +42,19 @@
 
 .preview-card-wrap {
   width: 100%;
-  animation: scaleIn 0.3s var(--ease-out) forwards;
+  animation: scaleIn 0.2s var(--ease-out) forwards;
 }
 
 /* Extended details in preview */
 .extended-preview {
   margin-top: var(--sp-6);
   padding: var(--sp-5);
-  border-radius: var(--radius-lg);
-  animation: fadeInUp 0.4s var(--ease-out) forwards;
-  animation-delay: 0.1s;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+  animation: fadeInUp 0.3s var(--ease-out) forwards;
+  animation-delay: 0.05s;
 }
 
 .takeaways-preview-list {
@@ -66,7 +72,7 @@
 /* Segmented Control for Difficulty */
 .difficulty-selector {
   display: flex;
-  background: rgba(15, 23, 42, 0.45);
+  background: var(--color-surface-2);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   padding: 4px;
@@ -77,7 +83,7 @@
 .difficulty-option {
   flex: 1;
   text-align: center;
-  padding: var(--sp-2) var(--sp-4);
+  padding: var(--sp-2) var(--sp-3);
   border-radius: var(--radius-sm);
   cursor: pointer;
   font-size: var(--fs-sm);
@@ -96,10 +102,9 @@
 }
 
 .difficulty-option.active {
-  background: var(--gradient-accent);
+  background: var(--color-primary);
   color: #fff;
-  font-weight: var(--fw-semi);
-  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.25);
+  font-weight: var(--fw-medium);
 }
 
 .hidden-radio {
@@ -116,8 +121,8 @@
   flex-wrap: wrap;
   align-items: center;
   gap: var(--sp-2);
-  min-height: 48px;
-  padding: 6px var(--sp-4) !important;
+  min-height: 44px;
+  padding: 6px var(--sp-3) !important;
   cursor: text;
 }
 
@@ -156,8 +161,8 @@
 }
 
 @keyframes pulse-glow-warning {
-  0%, 100% { box-shadow: 0 0 6px rgba(245,158,11,0.4); }
-  50%       { box-shadow: 0 0 16px rgba(245,158,11,0.85); }
+  0%, 100% { box-shadow: 0 0 4px rgba(245,158,11,0.2); }
+  50%       { box-shadow: 0 0 10px rgba(245,158,11,0.5); }
 }
 
 /* Toast container override or adjustment if needed */
@@ -169,15 +174,11 @@
 @media (max-width: 1024px) {
   .edit-entry-grid {
     grid-template-columns: 1fr;
-    gap: var(--sp-8);
+    gap: var(--sp-6);
   }
 
   .preview-sticky {
     position: static;
-  }
-
-  .form-panel {
-    padding: var(--sp-6);
   }
 }
 
