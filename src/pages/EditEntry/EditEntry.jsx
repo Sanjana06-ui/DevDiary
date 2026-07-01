@@ -4,83 +4,8 @@ import Navbar from '../../components/Navbar/Navbar'
 import Sidebar from '../../components/Sidebar/Sidebar'
 import Button from '../../components/Button/Button'
 import EntryCard from '../../components/EntryCard/EntryCard'
+import entryService from '../../services/entry.service'
 import './EditEntry.css'
-
-// Mock Data Database
-const mockDatabase = {
-  '1': {
-    title: 'Understanding React Server Components',
-    tech: 'React',
-    difficulty: 'Advanced',
-    date: '2026-10-12',
-    description: 'RSC allows rendering components exclusively on the server, resulting in smaller bundle sizes and improved performance since the client only downloads interactive parts.',
-    tags: ['React', 'RSC', 'Next.js', 'Performance'],
-    takeaways: "RSC components run on the server and are serialized to JSON.\nReduces bundle size by removing libraries used only on the server.\nClient components can still be imported and rendered within RSCs.",
-    resource: 'https://react.dev/reference/react/components',
-  },
-  '2': {
-    title: 'Mastering CSS Grid Subgrid',
-    tech: 'CSS',
-    difficulty: 'Intermediate',
-    date: '2026-10-10',
-    description: 'Subgrid makes it extremely easy to perfectly align child grids to their parent grid tracks without recalculating gap and track sizes manually.',
-    tags: ['CSS', 'Grid', 'Layout', 'Subgrid'],
-    takeaways: "Allows nested grids to share tracks with the parent grid.\nAvoids calculations for perfect alignments.\nCurrently supported by all modern major browser engines.",
-    resource: 'https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_grid_layout/Subgrid',
-  },
-  '3': {
-    title: 'Prisma Client Extensions',
-    tech: 'Other',
-    difficulty: 'Intermediate',
-    date: '2026-10-08',
-    description: 'Learned how to use Prisma client extensions to add custom computed fields and reusable queries across the whole database access layer.',
-    tags: ['Prisma', 'Database', 'ORM', 'Node.js'],
-    takeaways: "Client extensions offer a clean way to extend Prisma functionality.\nUseful for building dynamic computed properties (e.g., fullName).\nSimplifies reusable database filters.",
-    resource: 'https://www.prisma.io/docs/concepts/components/prisma-client/client-extensions',
-  },
-  '4': {
-    title: 'Vite Plugin Setup Basics',
-    tech: 'Other',
-    difficulty: 'Beginner',
-    date: '2026-10-05',
-    description: 'Explored the hook structure for Vite plugins. Using transformIndexHtml to inject meta tags during build time proved very useful.',
-    tags: ['Vite', 'Plugins', 'Build', 'HTML'],
-    takeaways: "Vite plugins use simple Rollup hooks under the hood.\ntransformIndexHtml lets you edit the raw page index before delivery.\nConfiguring plugins is done inline in vite.config.js.",
-    resource: 'https://vite.dev/guide/api-plugin.html',
-  },
-  '5': {
-    title: 'JWT Authentication Flow',
-    tech: 'Other',
-    difficulty: 'Advanced',
-    date: '2026-10-01',
-    description: 'Implemented access and refresh tokens. The key takeaway was storing the access token in memory and the refresh token in a HttpOnly cookie for security.',
-    tags: ['Security', 'JWT', 'Auth', 'Express'],
-    takeaways: "Access tokens should be short-lived and stored in memory.\nRefresh tokens should be stored in secure HttpOnly cookies.\nPrevents XSS attacks from easily stealing credentials.",
-    resource: 'https://jwt.io/introduction',
-  },
-  '6': {
-    title: 'TypeScript Utility Types',
-    tech: 'TypeScript',
-    difficulty: 'Beginner',
-    date: '2026-09-28',
-    description: 'Using Pick, Omit, and Partial has massively cleaned up our interface definitions avoiding redundant declarations.',
-    tags: ['TypeScript', 'Types', 'Utility', 'Safety'],
-    takeaways: "Pick creates a type by picking selected keys.\nOmit does the opposite by removing selected keys.\nPartial makes all keys optional, helpful for patch/update payloads.",
-    resource: 'https://www.typescriptlang.org/docs/handbook/utility-types.html',
-  }
-}
-
-// Fallback entry if ID not found
-const fallbackEntry = {
-  title: 'Untitled Learning Entry',
-  tech: 'React',
-  difficulty: 'Intermediate',
-  date: '2026-06-30',
-  description: 'Explain what you have learned...',
-  tags: [],
-  takeaways: '',
-  resource: '',
-}
 
 // Helper to format date display (e.g. "Jun 30, 2026")
 const formatDateDisplay = (dateStr) => {
@@ -90,6 +15,25 @@ const formatDateDisplay = (dateStr) => {
   const options = { month: 'short', day: '2-digit', year: 'numeric' }
   return date.toLocaleDateString('en-US', options)
 }
+
+// Simple Markdown to HTML Parser
+const parseMarkdownToHtml = (text) => {
+  if (!text) return ''
+  let html = text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*([^*]+)\*/g, '<em>$1</em>')
+    .replace(/`([^`]+)`/g, '<code class="preview-inline-code">$1</code>')
+    .replace(/^### (.*$)/gim, '<h5 class="text-sm font-bold mt-2 mb-1">$1</h5>')
+    .replace(/^## (.*$)/gim, '<h4 class="text-base font-bold mt-3 mb-1 text-primary">$1</h4>')
+    .replace(/\n/g, '<br />')
+  return html
+}
+
+const popularTechs = ['React', 'TypeScript', 'CSS', 'Node.js', 'Docker', 'Git']
+const popularTags = ['Hooks', 'Layout', 'Performance', 'Database', 'Security', 'Caching', 'Testing']
 
 const EditEntry = () => {
   const { id } = useParams()
@@ -115,28 +59,49 @@ const EditEntry = () => {
   const [isSaving, setIsSaving] = useState(false)
   const [successToast, setSuccessToast] = useState(false)
   const [showCancelModal, setShowCancelModal] = useState(false)
+  const [readingTime, setReadingTime] = useState(1)
 
   const maxDescriptionLength = 500
 
-  // Load Prefill Data on Mount/ID Change
+  // Load Prefill Data from our Local Storage Database
   useEffect(() => {
-    const entry = mockDatabase[id] || fallbackEntry
-    setOriginalData(entry)
-    setOriginalTags(entry.tags)
-    
-    setFormData({
-      title: entry.title,
-      tech: entry.tech,
-      difficulty: entry.difficulty,
-      date: entry.date,
-      description: entry.description,
-      takeaways: entry.takeaways,
-      resource: entry.resource,
-    })
-    setTags(entry.tags)
-    setCharCount(entry.description.length)
-    setErrors({})
+    const loadEntry = async () => {
+      try {
+        const entry = await entryService.getById(id)
+        if (!entry) {
+          triggerToast('Learning log not found', 'error')
+          navigate('/entries')
+          return
+        }
+        setOriginalData(entry)
+        setOriginalTags(entry.tags || [])
+        
+        setFormData({
+          title: entry.title,
+          tech: entry.tech,
+          difficulty: entry.difficulty,
+          date: entry.date,
+          description: entry.description,
+          takeaways: entry.takeaways,
+          resource: entry.resource,
+        })
+        setTags(entry.tags || [])
+        setCharCount(entry.description.length)
+        setErrors({})
+      } catch (err) {
+        console.error(err)
+        navigate('/entries')
+      }
+    }
+    loadEntry()
   }, [id])
+
+  // Calculate estimated reading time in real-time
+  useEffect(() => {
+    const words = formData.description.trim().split(/\s+/).filter(w => w.length > 0).length
+    const minutes = Math.max(1, Math.ceil(words / 150))
+    setReadingTime(minutes)
+  }, [formData.description])
 
   // Track if changes are modified compared to loaded prefilled data
   const isModified = originalData && (
@@ -157,7 +122,6 @@ const EditEntry = () => {
       [name]: value
     }))
     
-    // Clear error
     if (errors[name]) {
       setErrors((prev) => ({ ...prev, [name]: null }))
     }
@@ -178,7 +142,6 @@ const EditEntry = () => {
     }
   }
 
-  // Tags input handlers
   const handleTagKeyDown = (e) => {
     if (e.key === 'Enter' || e.key === ',' || e.key === 'Tab') {
       e.preventDefault()
@@ -190,8 +153,9 @@ const EditEntry = () => {
     addTag()
   }
 
-  const addTag = () => {
-    const cleanTag = tagInput.trim().replace(/,/g, '')
+  const addTag = (specifiedTag = null) => {
+    const tagToAdd = specifiedTag || tagInput
+    const cleanTag = tagToAdd.trim().replace(/,/g, '')
     if (cleanTag && !tags.includes(cleanTag)) {
       setTags([...tags, cleanTag])
       setTagInput('')
@@ -213,7 +177,7 @@ const EditEntry = () => {
         takeaways: originalData.takeaways,
         resource: originalData.resource,
       })
-      setTags(originalData.tags)
+      setTags(originalData.tags || [])
       setCharCount(originalData.description.length)
       setTagInput('')
       setErrors({})
@@ -224,7 +188,21 @@ const EditEntry = () => {
     if (isModified) {
       setShowCancelModal(true)
     } else {
-      navigate('/dashboard')
+      navigate('/entries')
+    }
+  }
+
+  const handleAutoSummarize = () => {
+    const desc = formData.description.trim()
+    if (!desc) {
+      setErrors(prev => ({ ...prev, takeaways: 'Enter description text first to auto-summarize.' }))
+      return
+    }
+    const sentences = desc.split(/[.!?]+/).map(s => s.trim()).filter(s => s.length > 0)
+    const summary = sentences.slice(0, 3).map(s => `• ${s}.`).join('\n')
+    setFormData(prev => ({ ...prev, takeaways: summary }))
+    if (errors.takeaways) {
+      setErrors(prev => ({ ...prev, takeaways: null }))
     }
   }
 
@@ -263,7 +241,7 @@ const EditEntry = () => {
     return Object.keys(newErrors).length === 0
   }
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
 
     if (!validateForm()) {
@@ -279,16 +257,39 @@ const EditEntry = () => {
 
     setIsSaving(true)
 
-    // Simulate API update
-    setTimeout(() => {
+    try {
+      // Save actually to our local database!
+      await entryService.update(id, {
+        title: formData.title.trim(),
+        tech: formData.tech,
+        difficulty: formData.difficulty,
+        date: formData.date,
+        description: formData.description.trim(),
+        takeaways: formData.takeaways.trim(),
+        resource: formData.resource.trim(),
+        tags
+      })
+      
       setIsSaving(false)
       setSuccessToast(true)
 
       setTimeout(() => {
         setSuccessToast(false)
-        navigate('/dashboard')
-      }, 2000)
-    }, 1500)
+        navigate('/entries')
+      }, 1500)
+    } catch (err) {
+      setIsSaving(false)
+      setErrors(prev => ({ ...prev, submit: 'Failed to update learning entry.' }))
+    }
+  }
+
+  // Helper to highlight modified fields
+  const isFieldModified = (name) => {
+    if (!originalData) return false
+    if (name === 'tags') {
+      return JSON.stringify(tags) !== JSON.stringify(originalTags)
+    }
+    return formData[name] !== originalData[name]
   }
 
   return (
@@ -304,28 +305,32 @@ const EditEntry = () => {
             <div className="edit-entry-container">
               
               {/* --- Page Header --- */}
-              <header className="dashboard-header mb-8 flex-col gap-2">
-                <div className="flex justify-between items-start flex-wrap gap-4 w-full">
+              <header className="dashboard-header mb-6">
+                <div className="flex items-center gap-2 text-sm text-primary font-semi mb-3">
+                  <Link to="/dashboard" className="hover:text-primary-light transition-colors">Dashboard</Link>
+                  <span className="text-muted">/</span>
+                  <Link to="/entries" className="hover:text-primary-light transition-colors">My Entries</Link>
+                  <span className="text-muted">/</span>
+                  <span className="text-muted">Edit Log</span>
+                </div>
+                
+                <div className="flex justify-between items-center flex-wrap gap-4 w-full">
                   <div>
-                    <div className="flex items-center gap-2 text-sm text-primary font-semi mb-3">
-                      <Link to="/dashboard" className="hover:text-primary-light transition-colors">Dashboard</Link>
-                      <span className="text-muted">/</span>
-                      <Link to="/entries" className="hover:text-primary-light transition-colors">My Entries</Link>
-                      <span className="text-muted">/</span>
-                      <span className="text-muted">Edit Entry</span>
-                    </div>
-                    
-                    <h1 className="text-3xl font-bold mb-2">Edit Learning Entry</h1>
-                    <p className="text-muted">Update and refine your learning notes.</p>
+                    <h1 className="text-3xl font-bold mb-1">Edit Learning Entry</h1>
+                    <p className="text-muted text-sm">Refine technical parameters, links, or takeaways details.</p>
                   </div>
 
-                  {/* Unsaved Changes Indicator */}
-                  {isModified && (
-                    <div className="glass-card-solid py-2 px-4 rounded-full border border-warning border-opacity-35 flex items-center gap-2 animate-fadeInUp shadow-glow-warning">
-                      <span className="dot dot-warning" aria-hidden="true"></span>
-                      <span className="text-xs font-semi text-warning uppercase tracking-wide">Unsaved Changes</span>
-                    </div>
-                  )}
+                  <div className="flex gap-2 items-center flex-wrap">
+                    {originalData && originalData.lastEdited && (
+                      <span className="text-xs text-muted">Edited: {new Date(originalData.lastEdited).toLocaleDateString()}</span>
+                    )}
+                    {isModified && (
+                      <div className="glass-card-solid py-1.5 px-3.5 rounded-full border border-warning border-opacity-35 flex items-center gap-2 animate-fadeInUp shadow-sm">
+                        <span className="dot dot-warning" aria-hidden="true"></span>
+                        <span className="text-xs font-semi text-warning uppercase tracking-wide">Unsaved Changes</span>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </header>
 
@@ -340,12 +345,13 @@ const EditEntry = () => {
                     <div className="form-group">
                       <label className="form-label" htmlFor="title">
                         Learning Title <span className="required">*</span>
+                        {isFieldModified('title') && <span className="text-[10px] text-warning ml-2 font-normal">(Modified)</span>}
                       </label>
                       <input 
                         type="text" 
                         id="title" 
                         name="title" 
-                        className={`input ${errors.title ? 'input-error' : ''}`}
+                        className={`input ${errors.title ? 'input-error' : ''} ${isFieldModified('title') ? 'border-warning' : ''}`}
                         placeholder="e.g., Understanding React Server Components"
                         value={formData.title}
                         onChange={handleInputChange}
@@ -365,11 +371,12 @@ const EditEntry = () => {
                       <div className="form-group">
                         <label className="form-label" htmlFor="tech">
                           Technology <span className="required">*</span>
+                          {isFieldModified('tech') && <span className="text-[10px] text-warning ml-2 font-normal">(Modified)</span>}
                         </label>
                         <select 
                           id="tech" 
                           name="tech" 
-                          className={`select ${errors.tech ? 'input-error' : ''}`}
+                          className={`select ${errors.tech ? 'input-error' : ''} ${isFieldModified('tech') ? 'border-warning' : ''}`}
                           value={formData.tech}
                           onChange={handleInputChange}
                         >
@@ -383,8 +390,32 @@ const EditEntry = () => {
                           <option value="HTML">HTML</option>
                           <option value="CSS">CSS</option>
                           <option value="Git">Git</option>
+                          <option value="DevOps">DevOps</option>
+                          <option value="Database">Database</option>
+                          <option value="Build Tools">Build Tools</option>
+                          <option value="Security">Security</option>
+                          <option value="Testing">Testing</option>
                           <option value="Other">Other</option>
                         </select>
+
+                        {/* Tech suggestions */}
+                        <div className="suggestion-pills mt-1 flex flex-wrap gap-1">
+                          <span className="text-[10px] text-muted mr-1 self-center">Popular:</span>
+                          {popularTechs.map(t => (
+                            <button
+                              key={t}
+                              type="button"
+                              className="badge badge-muted text-[10px] hover:border-primary-light"
+                              onClick={() => {
+                                setFormData(prev => ({ ...prev, tech: t }));
+                                if (errors.tech) setErrors(prev => ({ ...prev, tech: null }));
+                              }}
+                            >
+                              {t}
+                            </button>
+                          ))}
+                        </div>
+
                         {errors.tech && (
                           <span className="form-error">
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
@@ -397,12 +428,13 @@ const EditEntry = () => {
                       <div className="form-group">
                         <label className="form-label" htmlFor="date">
                           Learning Date <span className="required">*</span>
+                          {isFieldModified('date') && <span className="text-[10px] text-warning ml-2 font-normal">(Modified)</span>}
                         </label>
                         <input 
                           type="date" 
                           id="date" 
                           name="date" 
-                          className="input"
+                          className={`input ${isFieldModified('date') ? 'border-warning' : ''}`}
                           value={formData.date}
                           onChange={handleInputChange}
                         />
@@ -413,6 +445,7 @@ const EditEntry = () => {
                     <div className="form-group">
                       <span className="form-label">
                         Difficulty <span className="required">*</span>
+                        {isFieldModified('difficulty') && <span className="text-[10px] text-warning ml-2 font-normal">(Modified)</span>}
                       </span>
                       <div className="difficulty-selector" role="radiogroup" aria-label="Select difficulty level">
                         {['Beginner', 'Intermediate', 'Advanced'].map((diff) => {
@@ -441,7 +474,8 @@ const EditEntry = () => {
                     <div className="form-group">
                       <div className="flex justify-between items-center">
                         <label className="form-label" htmlFor="description">
-                          Description <span className="required">*</span>
+                          Description (Markdown supported) <span className="required">*</span>
+                          {isFieldModified('description') && <span className="text-[10px] text-warning ml-2 font-normal">(Modified)</span>}
                         </label>
                         <span className={`char-counter text-xs ${charCount >= maxDescriptionLength ? 'text-error' : 'text-muted'}`}>
                           {charCount} / {maxDescriptionLength}
@@ -450,7 +484,7 @@ const EditEntry = () => {
                       <textarea 
                         id="description" 
                         name="description" 
-                        className={`textarea ${errors.description ? 'input-error' : ''}`}
+                        className={`textarea ${errors.description ? 'input-error' : ''} ${isFieldModified('description') ? 'border-warning' : ''}`}
                         placeholder="What did you learn? Describe in detail..."
                         value={formData.description}
                         onChange={handleDescriptionChange}
@@ -468,15 +502,16 @@ const EditEntry = () => {
                     <div className="form-group">
                       <label className="form-label" htmlFor="tags-input">
                         Tags
+                        {isFieldModified('tags') && <span className="text-[10px] text-warning ml-2 font-normal">(Modified)</span>}
                       </label>
                       <div 
-                        className="tags-input-container input"
+                        className={`tags-input-container input ${isFieldModified('tags') ? 'border-warning' : ''}`}
                         onClick={() => document.getElementById('tags-input').focus()}
                       >
                         <div className="tags-list">
                           {tags.map((tag) => (
                             <span className="tag" key={tag}>
-                              {tag}
+                              #{tag}
                               <button 
                                 type="button" 
                                 className="tag-remove" 
@@ -493,7 +528,7 @@ const EditEntry = () => {
                           <input 
                             type="text" 
                             id="tags-input" 
-                            placeholder={tags.length === 0 ? "e.g., Hooks, API (Press Enter/Comma to add)" : ""}
+                            placeholder={tags.length === 0 ? "Press Enter or comma to append" : ""}
                             value={tagInput}
                             onChange={(e) => setTagInput(e.target.value)}
                             onKeyDown={handleTagKeyDown}
@@ -502,18 +537,45 @@ const EditEntry = () => {
                           />
                         </div>
                       </div>
-                      <span className="form-hint">Press Enter, Comma, or Tab to add a tag.</span>
+                      
+                      {/* Tag Suggestions */}
+                      <div className="suggestion-pills mt-1 flex flex-wrap gap-1">
+                        <span className="text-[10px] text-muted mr-1 self-center">Suggestions:</span>
+                        {popularTags.map(tag => (
+                          <button
+                            key={tag}
+                            type="button"
+                            className="badge badge-muted text-[10px] hover:border-secondary-light"
+                            disabled={tags.includes(tag)}
+                            onClick={() => addTag(tag)}
+                          >
+                            +{tag}
+                          </button>
+                        ))}
+                      </div>
                     </div>
 
                     {/* Key Takeaways */}
                     <div className="form-group">
-                      <label className="form-label" htmlFor="takeaways">
-                        Key Takeaways <span className="required">*</span>
-                      </label>
+                      <div className="flex justify-between items-center">
+                        <label className="form-label" htmlFor="takeaways">
+                          Key Takeaways <span className="required">*</span>
+                          {isFieldModified('takeaways') && <span className="text-[10px] text-warning ml-2 font-normal">(Modified)</span>}
+                        </label>
+                        <button 
+                          type="button" 
+                          className="btn btn-secondary btn-xs flex gap-1 items-center" 
+                          onClick={handleAutoSummarize}
+                          title="Generate summaries automatically from Description text"
+                        >
+                          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+                          Auto-Summarize
+                        </button>
+                      </div>
                       <textarea 
                         id="takeaways" 
                         name="takeaways" 
-                        className={`textarea ${errors.takeaways ? 'input-error' : ''}`}
+                        className={`textarea ${errors.takeaways ? 'input-error' : ''} ${isFieldModified('takeaways') ? 'border-warning' : ''}`}
                         placeholder="Write key takeaways or main points (one per line)..."
                         value={formData.takeaways}
                         onChange={handleInputChange}
@@ -530,6 +592,7 @@ const EditEntry = () => {
                     <div className="form-group">
                       <label className="form-label" htmlFor="resource">
                         Resource URL
+                        {isFieldModified('resource') && <span className="text-[10px] text-warning ml-2 font-normal">(Modified)</span>}
                       </label>
                       <div className="input-wrap">
                         <span className="input-icon-left">
@@ -542,19 +605,17 @@ const EditEntry = () => {
                           type="text" 
                           id="resource" 
                           name="resource" 
-                          className={`input ${errors.resource ? 'input-error' : ''}`}
+                          className={`input ${errors.resource ? 'input-error' : ''} ${isFieldModified('resource') ? 'border-warning' : ''}`}
                           placeholder="https://reactjs.org/docs"
                           value={formData.resource}
                           onChange={handleInputChange}
                         />
                       </div>
-                      {errors.resource ? (
+                      {errors.resource && (
                         <span className="form-error">
                           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
                           {errors.resource}
                         </span>
-                      ) : (
-                        <span className="form-hint">Link to documentation, video, or tutorials that helped you.</span>
                       )}
                     </div>
 
@@ -564,7 +625,8 @@ const EditEntry = () => {
                         type="submit" 
                         variant="primary" 
                         loading={isSaving} 
-                        className="flex-1 hover-lift"
+                        disabled={!isModified}
+                        className="flex-grow hover-lift"
                       >
                         Update Entry
                       </Button>
@@ -597,8 +659,8 @@ const EditEntry = () => {
                     <div className="preview-header flex items-center justify-between mb-4">
                       <span className="text-sm font-semi text-muted uppercase tracking-wide">Live Preview</span>
                       <div className="flex items-center gap-2">
+                        <span className="text-xs text-secondary font-medium">{readingTime} min read</span>
                         <span className="dot dot-success animate-pulse-glow" aria-hidden="true"></span>
-                        <span className="text-xs text-success font-medium uppercase tracking-wide">Live</span>
                       </div>
                     </div>
 
@@ -608,10 +670,11 @@ const EditEntry = () => {
                         entry={{
                           id: parseInt(id) || 9999,
                           title: formData.title || 'Untitled Learning Entry',
-                          description: formData.description || 'Describe what you learned today. This section will update in real-time as you type, giving you an exact look at how it appears on your dashboard.',
+                          description: formData.description || 'Describe what you learned today. This section supports standard HTML markdown parsing in real-time.',
                           tech: formData.tech || 'Technology',
                           difficulty: formData.difficulty,
-                          date: formatDateDisplay(formData.date)
+                          date: formatDateDisplay(formData.date),
+                          readingTime
                         }}
                       />
                     </div>
@@ -620,13 +683,22 @@ const EditEntry = () => {
                     <div className="extended-preview glass-card-solid">
                       <h4 className="text-sm font-bold uppercase tracking-wider text-muted mb-4">Extended Details</h4>
                       
+                      {/* Markdown Preview Area */}
+                      <div className="mb-4">
+                        <h5 className="text-xs font-bold text-primary mb-1">Markdown Render</h5>
+                        <div 
+                          className="text-sm text-secondary leading-relaxed bg-surface-2 p-3 rounded border border-border mt-1"
+                          dangerouslySetInnerHTML={{ __html: parseMarkdownToHtml(formData.description) || '<i>No description entered yet.</i>' }}
+                        ></div>
+                      </div>
+
                       {/* Tags Preview */}
                       <div className="mb-4">
                         <h5 className="text-xs font-bold text-primary mb-1">Tags</h5>
                         {tags.length > 0 ? (
                           <div className="flex flex-wrap gap-2 mt-2">
                             {tags.map((t) => (
-                              <span className="badge badge-secondary" key={t}>{t}</span>
+                              <span className="badge badge-secondary" key={t}>#{t}</span>
                             ))}
                           </div>
                         ) : (
@@ -645,23 +717,6 @@ const EditEntry = () => {
                           </ul>
                         ) : (
                           <p className="text-xs text-muted italic">No takeaways added yet</p>
-                        )}
-                      </div>
-
-                      {/* Reference URL Preview */}
-                      <div>
-                        <h5 className="text-xs font-bold text-primary mb-1">Reference URL</h5>
-                        {formData.resource.trim() ? (
-                          <a 
-                            href={formData.resource} 
-                            target="_blank" 
-                            rel="noopener noreferrer" 
-                            className="text-xs text-primary-light truncate block hover:underline"
-                          >
-                            {formData.resource}
-                          </a>
-                        ) : (
-                          <p className="text-xs text-muted italic">No reference link added yet</p>
                         )}
                       </div>
 
@@ -690,7 +745,7 @@ const EditEntry = () => {
                 onClick={() => setShowCancelModal(false)}
                 aria-label="Close modal"
               >
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                &times;
               </button>
             </div>
             <div className="modal-body">
@@ -699,12 +754,8 @@ const EditEntry = () => {
               </p>
             </div>
             <div className="modal-footer">
-              <Button variant="ghost" onClick={() => setShowCancelModal(false)}>
-                Cancel
-              </Button>
-              <Button variant="danger" onClick={() => navigate('/dashboard')}>
-                Discard Changes
-              </Button>
+              <button className="btn btn-ghost btn-sm" onClick={() => setShowCancelModal(false)}>Keep Editing</button>
+              <button className="btn btn-danger btn-sm" onClick={() => { setShowCancelModal(false); navigate('/entries'); }}>Discard Changes</button>
             </div>
           </div>
         </div>

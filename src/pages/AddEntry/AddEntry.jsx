@@ -1,9 +1,10 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import Navbar from '../../components/Navbar/Navbar'
 import Sidebar from '../../components/Sidebar/Sidebar'
 import Button from '../../components/Button/Button'
 import EntryCard from '../../components/EntryCard/EntryCard'
+import entryService from '../../services/entry.service'
 import './AddEntry.css'
 
 // Helper to get today's date in local YYYY-MM-DD format
@@ -23,6 +24,25 @@ const formatDateDisplay = (dateStr) => {
   const options = { month: 'short', day: '2-digit', year: 'numeric' }
   return date.toLocaleDateString('en-US', options)
 }
+
+// Simple Markdown to HTML Parser
+const parseMarkdownToHtml = (text) => {
+  if (!text) return ''
+  let html = text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>') // Bold
+    .replace(/\*([^*]+)\*/g, '<em>$1</em>') // Italic
+    .replace(/`([^`]+)`/g, '<code class="preview-inline-code">$1</code>') // Inline Code
+    .replace(/^### (.*$)/gim, '<h5 class="text-sm font-bold mt-2 mb-1">$1</h5>') // Headings
+    .replace(/^## (.*$)/gim, '<h4 class="text-base font-bold mt-3 mb-1 text-primary">$1</h4>')
+    .replace(/\n/g, '<br />')
+  return html
+}
+
+const popularTechs = ['React', 'TypeScript', 'CSS', 'Node.js', 'Docker', 'Git']
+const popularTags = ['Hooks', 'Layout', 'Performance', 'Database', 'Security', 'Caching', 'Testing']
 
 const AddEntry = () => {
   const navigate = useNavigate()
@@ -44,17 +64,38 @@ const AddEntry = () => {
   const [charCount, setCharCount] = useState(0)
   const [isSaving, setIsSaving] = useState(false)
   const [successToast, setSuccessToast] = useState(false)
+  
+  // Unsaved Changes States
+  const [isDirty, setIsDirty] = useState(false)
+  const [showCancelModal, setShowCancelModal] = useState(false)
+  
+  // Estimated Reading Time State
+  const [readingTime, setReadingTime] = useState(1)
 
   const maxDescriptionLength = 500
 
+  // Calculate estimated reading time in real-time
+  useEffect(() => {
+    const words = formData.description.trim().split(/\s+/).filter(w => w.length > 0).length
+    const minutes = Math.max(1, Math.ceil(words / 150)) // 150 words per minute estimation
+    setReadingTime(minutes)
+  }, [formData.description])
+
+  // Track if changes have been made
+  const checkIsDirty = (newData) => {
+    const isDifferent = Object.keys(initialFormState).some(key => newData[key] !== initialFormState[key])
+    setIsDirty(isDifferent || tags.length > 0)
+  }
+
   const handleInputChange = (e) => {
     const { name, value } = e.target
-    setFormData((prev) => ({
-      ...prev,
+    const updated = {
+      ...formData,
       [name]: value
-    }))
+    }
+    setFormData(updated)
+    checkIsDirty(updated)
     
-    // Clear error when user makes changes
     if (errors[name]) {
       setErrors((prev) => ({ ...prev, [name]: null }))
     }
@@ -63,11 +104,13 @@ const AddEntry = () => {
   const handleDescriptionChange = (e) => {
     const { value } = e.target
     if (value.length <= maxDescriptionLength) {
-      setFormData((prev) => ({
-        ...prev,
+      const updated = {
+        ...formData,
         description: value
-      }))
+      }
+      setFormData(updated)
       setCharCount(value.length)
+      checkIsDirty(updated)
       
       if (errors.description) {
         setErrors((prev) => ({ ...prev, description: null }))
@@ -75,7 +118,6 @@ const AddEntry = () => {
     }
   }
 
-  // Tags input handling
   const handleTagKeyDown = (e) => {
     if (e.key === 'Enter' || e.key === ',' || e.key === 'Tab') {
       e.preventDefault()
@@ -87,16 +129,21 @@ const AddEntry = () => {
     addTag()
   }
 
-  const addTag = () => {
-    const cleanTag = tagInput.trim().replace(/,/g, '')
+  const addTag = (specifiedTag = null) => {
+    const tagToAdd = specifiedTag || tagInput
+    const cleanTag = tagToAdd.trim().replace(/,/g, '')
     if (cleanTag && !tags.includes(cleanTag)) {
-      setTags([...tags, cleanTag])
+      const updatedTags = [...tags, cleanTag]
+      setTags(updatedTags)
       setTagInput('')
+      setIsDirty(true)
     }
   }
 
   const removeTag = (tagToRemove) => {
-    setTags(tags.filter((tag) => tag !== tagToRemove))
+    const updatedTags = tags.filter((tag) => tag !== tagToRemove)
+    setTags(updatedTags)
+    setIsDirty(updatedTags.length > 0 || Object.keys(initialFormState).some(key => formData[key] !== initialFormState[key]))
   }
 
   const handleReset = () => {
@@ -105,10 +152,33 @@ const AddEntry = () => {
     setTagInput('')
     setErrors({})
     setCharCount(0)
+    setIsDirty(false)
   }
 
-  const handleCancel = () => {
-    navigate('/dashboard')
+  const handleCancelClick = () => {
+    if (isDirty) {
+      setShowCancelModal(true)
+    } else {
+      navigate('/dashboard')
+    }
+  }
+
+  const handleAutoSummarize = () => {
+    const desc = formData.description.trim()
+    if (!desc) {
+      setErrors(prev => ({ ...prev, takeaways: 'Enter description text first to auto-summarize.' }))
+      return
+    }
+    
+    // Auto-generate key takeaways by splitting sentences or counting text parts
+    const sentences = desc.split(/[.!?]+/).map(s => s.trim()).filter(s => s.length > 0)
+    const summary = sentences.slice(0, 3).map(s => `• ${s}.`).join('\n')
+    
+    setFormData(prev => ({ ...prev, takeaways: summary }))
+    setIsDirty(true)
+    if (errors.takeaways) {
+      setErrors(prev => ({ ...prev, takeaways: null }))
+    }
   }
 
   const validateForm = () => {
@@ -146,11 +216,10 @@ const AddEntry = () => {
     return Object.keys(newErrors).length === 0
   }
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
 
     if (!validateForm()) {
-      // Scroll to the first error
       const firstErrorKey = Object.keys(errors)[0]
       if (firstErrorKey) {
         const errorElement = document.getElementById(firstErrorKey)
@@ -163,17 +232,31 @@ const AddEntry = () => {
 
     setIsSaving(true)
 
-    // Simulate API call saving entry
-    setTimeout(() => {
+    try {
+      // Save actually to our local database!
+      await entryService.create({
+        title: formData.title.trim(),
+        tech: formData.tech,
+        difficulty: formData.difficulty,
+        date: formData.date,
+        description: formData.description.trim(),
+        takeaways: formData.takeaways.trim(),
+        resource: formData.resource.trim(),
+        tags
+      })
+      
       setIsSaving(false)
       setSuccessToast(true)
+      setIsDirty(false)
 
-      // Redirect after showing toast
       setTimeout(() => {
         setSuccessToast(false)
-        navigate('/dashboard')
-      }, 2000)
-    }, 1500)
+        navigate('/entries')
+      }, 1500)
+    } catch (err) {
+      setIsSaving(false)
+      setErrors(prev => ({ ...prev, submit: 'Failed to create learning entry.' }))
+    }
   }
 
   return (
@@ -189,15 +272,22 @@ const AddEntry = () => {
             <div className="add-entry-container">
               
               {/* --- Page Header --- */}
-              <header className="dashboard-header mb-8">
+              <header className="dashboard-header mb-6">
                 <div className="flex items-center gap-2 text-sm text-primary font-semi mb-3">
                   <Link to="/dashboard" className="hover:text-primary-light transition-colors">Dashboard</Link>
                   <span className="text-muted">/</span>
-                  <span className="text-muted">Add Entry</span>
+                  <span className="text-muted">New Log</span>
                 </div>
                 
-                <h1 className="text-3xl font-bold mb-2">Add Learning Entry</h1>
-                <p className="text-muted">Document what you've learned today.</p>
+                <div className="flex justify-between items-center flex-wrap gap-4">
+                  <div>
+                    <h1 className="text-3xl font-bold mb-1">Add Learning Entry</h1>
+                    <p className="text-muted text-sm">Document technical discoveries and takeaways for your streak progress.</p>
+                  </div>
+                  {isDirty && (
+                    <span className="badge badge-warning animate-pulse-glow">Unsaved Changes</span>
+                  )}
+                </div>
               </header>
 
               {/* --- Grid Layout --- */}
@@ -254,8 +344,33 @@ const AddEntry = () => {
                           <option value="HTML">HTML</option>
                           <option value="CSS">CSS</option>
                           <option value="Git">Git</option>
+                          <option value="DevOps">DevOps</option>
+                          <option value="Database">Database</option>
+                          <option value="Build Tools">Build Tools</option>
+                          <option value="Security">Security</option>
+                          <option value="Testing">Testing</option>
                           <option value="Other">Other</option>
                         </select>
+
+                        {/* Tech suggestions */}
+                        <div className="suggestion-pills mt-1 flex flex-wrap gap-1">
+                          <span className="text-[10px] text-muted mr-1 self-center">Popular:</span>
+                          {popularTechs.map(t => (
+                            <button
+                              key={t}
+                              type="button"
+                              className="badge badge-muted text-[10px] hover:border-primary-light"
+                              onClick={() => {
+                                setFormData(prev => ({ ...prev, tech: t }));
+                                setIsDirty(true);
+                                if (errors.tech) setErrors(prev => ({ ...prev, tech: null }));
+                              }}
+                            >
+                              {t}
+                            </button>
+                          ))}
+                        </div>
+
                         {errors.tech && (
                           <span className="form-error">
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
@@ -312,7 +427,7 @@ const AddEntry = () => {
                     <div className="form-group">
                       <div className="flex justify-between items-center">
                         <label className="form-label" htmlFor="description">
-                          Description <span className="required">*</span>
+                          Description (Markdown supported) <span className="required">*</span>
                         </label>
                         <span className={`char-counter text-xs ${charCount >= maxDescriptionLength ? 'text-error' : 'text-muted'}`}>
                           {charCount} / {maxDescriptionLength}
@@ -322,7 +437,7 @@ const AddEntry = () => {
                         id="description" 
                         name="description" 
                         className={`textarea ${errors.description ? 'input-error' : ''}`}
-                        placeholder="What did you learn? Describe in detail..."
+                        placeholder="Detail what you learned today. Use **bold**, *italics*, and `code` tags to preview."
                         value={formData.description}
                         onChange={handleDescriptionChange}
                         maxLength={maxDescriptionLength}
@@ -345,9 +460,9 @@ const AddEntry = () => {
                         onClick={() => document.getElementById('tags-input').focus()}
                       >
                         <div className="tags-list">
-                          {tags.map((tag) => (
+                           {tags.map((tag) => (
                             <span className="tag" key={tag}>
-                              {tag}
+                              #{tag}
                               <button 
                                 type="button" 
                                 className="tag-remove" 
@@ -364,7 +479,7 @@ const AddEntry = () => {
                           <input 
                             type="text" 
                             id="tags-input" 
-                            placeholder={tags.length === 0 ? "e.g., Hooks, API (Press Enter/Comma to add)" : ""}
+                            placeholder={tags.length === 0 ? "Press Enter or comma to append" : ""}
                             value={tagInput}
                             onChange={(e) => setTagInput(e.target.value)}
                             onKeyDown={handleTagKeyDown}
@@ -373,14 +488,40 @@ const AddEntry = () => {
                           />
                         </div>
                       </div>
-                      <span className="form-hint">Press Enter, Comma, or Tab to add a tag.</span>
+                      
+                      {/* Tag Suggestions */}
+                      <div className="suggestion-pills mt-1 flex flex-wrap gap-1">
+                        <span className="text-[10px] text-muted mr-1 self-center">Suggestions:</span>
+                        {popularTags.map(tag => (
+                          <button
+                            key={tag}
+                            type="button"
+                            className="badge badge-muted text-[10px] hover:border-secondary-light"
+                            disabled={tags.includes(tag)}
+                            onClick={() => addTag(tag)}
+                          >
+                            +{tag}
+                          </button>
+                        ))}
+                      </div>
                     </div>
 
-                    {/* Key Takeaways */}
+                    {/* Key Takeaways with Auto-Summarizer */}
                     <div className="form-group">
-                      <label className="form-label" htmlFor="takeaways">
-                        Key Takeaways <span className="required">*</span>
-                      </label>
+                      <div className="flex justify-between items-center">
+                        <label className="form-label" htmlFor="takeaways">
+                          Key Takeaways <span className="required">*</span>
+                        </label>
+                        <button 
+                          type="button" 
+                          className="btn btn-secondary btn-xs flex gap-1 items-center" 
+                          onClick={handleAutoSummarize}
+                          title="Generate summaries automatically from Description text"
+                        >
+                          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+                          Auto-Summarize
+                        </button>
+                      </div>
                       <textarea 
                         id="takeaways" 
                         name="takeaways" 
@@ -419,13 +560,11 @@ const AddEntry = () => {
                           onChange={handleInputChange}
                         />
                       </div>
-                      {errors.resource ? (
+                      {errors.resource && (
                         <span className="form-error">
                           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
                           {errors.resource}
                         </span>
-                      ) : (
-                        <span className="form-hint">Link to documentation, video, or tutorials that helped you.</span>
                       )}
                     </div>
 
@@ -450,7 +589,7 @@ const AddEntry = () => {
                       <Button 
                         type="button" 
                         variant="ghost" 
-                        onClick={handleCancel} 
+                        onClick={handleCancelClick} 
                         className="hover-lift"
                       >
                         Cancel
@@ -467,8 +606,8 @@ const AddEntry = () => {
                     <div className="preview-header flex items-center justify-between mb-4">
                       <span className="text-sm font-semi text-muted uppercase tracking-wide">Live Preview</span>
                       <div className="flex items-center gap-2">
+                        <span className="text-xs text-secondary font-medium">{readingTime} min read</span>
                         <span className="dot dot-success animate-pulse-glow" aria-hidden="true"></span>
-                        <span className="text-xs text-success font-medium uppercase tracking-wide">Live</span>
                       </div>
                     </div>
 
@@ -478,10 +617,11 @@ const AddEntry = () => {
                         entry={{
                           id: 9999,
                           title: formData.title || 'Untitled Learning Entry',
-                          description: formData.description || 'Describe what you learned today. This section will update in real-time as you type, giving you an exact look at how it appears on your dashboard.',
+                          description: formData.description || 'Describe what you learned today. This section supports standard HTML markdown parsing in real-time.',
                           tech: formData.tech || 'Technology',
                           difficulty: formData.difficulty,
-                          date: formatDateDisplay(formData.date)
+                          date: formatDateDisplay(formData.date),
+                          readingTime
                         }}
                       />
                     </div>
@@ -490,13 +630,22 @@ const AddEntry = () => {
                     <div className="extended-preview glass-card-solid">
                       <h4 className="text-sm font-bold uppercase tracking-wider text-muted mb-4">Extended Details</h4>
                       
+                      {/* Markdown Preview Area */}
+                      <div className="mb-4">
+                        <h5 className="text-xs font-bold text-primary mb-1">Markdown Render</h5>
+                        <div 
+                          className="text-sm text-secondary leading-relaxed bg-surface-2 p-3 rounded border border-border mt-1"
+                          dangerouslySetInnerHTML={{ __html: parseMarkdownToHtml(formData.description) || '<i>No description entered yet.</i>' }}
+                        ></div>
+                      </div>
+
                       {/* Tags Preview */}
                       <div className="mb-4">
                         <h5 className="text-xs font-bold text-primary mb-1">Tags</h5>
                         {tags.length > 0 ? (
                           <div className="flex flex-wrap gap-2 mt-2">
                             {tags.map((t) => (
-                              <span className="badge badge-secondary" key={t}>{t}</span>
+                              <span className="badge badge-secondary" key={t}>#{t}</span>
                             ))}
                           </div>
                         ) : (
@@ -518,23 +667,6 @@ const AddEntry = () => {
                         )}
                       </div>
 
-                      {/* Reference URL Preview */}
-                      <div>
-                        <h5 className="text-xs font-bold text-primary mb-1">Reference URL</h5>
-                        {formData.resource.trim() ? (
-                          <a 
-                            href={formData.resource} 
-                            target="_blank" 
-                            rel="noopener noreferrer" 
-                            className="text-xs text-primary-light truncate block hover:underline"
-                          >
-                            {formData.resource}
-                          </a>
-                        ) : (
-                          <p className="text-xs text-muted italic">No reference link added yet</p>
-                        )}
-                      </div>
-
                     </div>
 
                   </div>
@@ -547,6 +679,27 @@ const AddEntry = () => {
           </div>
         </main>
       </div>
+
+      {/* --- Confirmation Dialog Modal --- */}
+      {showCancelModal && (
+        <div className="overlay animate-fadeIn" role="dialog" aria-modal="true">
+          <div className="modal animate-scaleIn">
+            <div className="modal-header">
+              <h3 className="text-lg font-bold">Discard Unsaved Changes?</h3>
+              <button className="btn-icon" onClick={() => setShowCancelModal(false)} aria-label="Close dialog">
+                &times;
+              </button>
+            </div>
+            <div className="modal-body text-sm text-secondary">
+              You have made modifications to this entry. Discarding will clear all inputs. Are you sure you want to proceed?
+            </div>
+            <div className="modal-footer">
+              <button className="btn btn-ghost btn-sm" onClick={() => setShowCancelModal(false)}>Keep Editing</button>
+              <button className="btn btn-danger btn-sm" onClick={() => { setShowCancelModal(false); navigate('/dashboard'); }}>Discard Changes</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Toast Notification Container */}
       {successToast && (

@@ -1,6 +1,6 @@
 /* EntryCard Specific Styles */
 .entry-card {
-  padding: var(--sp-5);
+  padding: var(--sp-4);
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
@@ -16,6 +16,22 @@
   border-color: rgba(255, 255, 255, 0.12);
   box-shadow: var(--shadow-md);
   transform: translateY(-1px);
+}
+
+.entry-card--pinned {
+  border-color: rgba(37, 99, 235, 0.45);
+  background: linear-gradient(180deg, rgba(37, 99, 235, 0.02) 0%, rgba(0, 0, 0, 0) 100%), var(--color-surface);
+}
+
+.btn-icon-xs {
+  width: 24px;
+  height: 24px;
+  border: none;
+  background: transparent;
+}
+
+.btn-icon-xs:hover {
+  background: rgba(255, 255, 255, 0.05);
 }
 
 .entry-card .btn-icon {
