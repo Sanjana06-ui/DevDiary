@@ -11,7 +11,7 @@
    ------------------------------------- */
 .login-branding {
   position: relative;
-  background: var(--color-surface-2); /* Matches sidebar bg for secondary solid look */
+  background: linear-gradient(135deg, #18092B 0%, #0A0311 100%);
   border-right: 1px solid var(--color-border);
   display: flex;
   align-items: center;
@@ -27,12 +27,30 @@
   max-width: 500px;
 }
 
-/* Remove ambient glows or make them non-colored very soft shadows */
+/* Floating lavender/purple blobs */
 .login-glow {
-  display: none;
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  z-index: 1;
+  opacity: 0.15;
+}
+.login-glow--1 {
+  width: 280px;
+  height: 280px;
+  background: var(--color-primary);
+  top: 10%;
+  left: -10%;
+}
+.login-glow--2 {
+  width: 320px;
+  height: 320px;
+  background: var(--color-secondary);
+  bottom: -10%;
+  right: -10%;
 }
 
-/* Artwork */
+/* Artwork mockup */
 .login-artwork {
   background: var(--color-surface);
   border: 1px solid var(--color-border);
@@ -40,8 +58,9 @@
   box-shadow: var(--shadow-lg);
   transition: var(--transition-base);
 }
+
 .login-artwork:hover {
-  border-color: rgba(255, 255, 255, 0.15);
+  border-color: var(--color-border-hover);
 }
 
 /* -------------------------------------
@@ -53,6 +72,7 @@
   justify-content: center;
   padding: var(--sp-6);
   position: relative;
+  background: var(--color-bg);
 }
 
 .login-card {
@@ -61,32 +81,44 @@
   padding: var(--sp-8) var(--sp-6);
   background: var(--color-surface);
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-lg);
   box-shadow: var(--shadow-lg);
 }
 
-/* Extra utility for the "OR" line in the form */
-.bg-surface-2 {
-  background-color: var(--color-surface); /* Matches card background color */
+/* Checkbox alignment */
+.check-wrap {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  cursor: pointer;
+  user-select: none;
 }
 
-/* -------------------------------------
-   Animations
-   ------------------------------------- */
+.check-wrap input[type="checkbox"] {
+  accent-color: var(--color-primary);
+  width: 15px;
+  height: 15px;
+  cursor: pointer;
+}
+
+/* OR Line separator */
+.bg-surface-2 {
+  background-color: var(--color-surface) !important;
+}
+
+/* Animations */
 @keyframes fadeInLeft {
-  from { opacity: 0; transform: translateX(-12px); }
+  from { opacity: 0; transform: translateX(-16px); }
   to   { opacity: 1; transform: translateX(0); }
 }
 @keyframes fadeInRight {
-  from { opacity: 0; transform: translateX(12px); }
+  from { opacity: 0; transform: translateX(16px); }
   to   { opacity: 1; transform: translateX(0); }
 }
 .animate-fadeInLeft  { animation: fadeInLeft 0.4s var(--ease-out) forwards; }
 .animate-fadeInRight { animation: fadeInRight 0.4s var(--ease-out) forwards; }
 
-/* -------------------------------------
-   Responsive
-   ------------------------------------- */
+/* Responsive adjustments */
 @media (max-width: 1024px) {
   .login-page {
     grid-template-columns: 1fr;

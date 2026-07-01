@@ -13,7 +13,7 @@
    ------------------------------------- */
 .register-branding {
   position: relative;
-  background: var(--color-surface-2);
+  background: linear-gradient(135deg, #18092B 0%, #0A0311 100%);
   border-right: 1px solid var(--color-border);
   display: flex;
   align-items: center;
@@ -29,9 +29,27 @@
   max-width: 500px;
 }
 
-/* Remove ambient glows */
+/* Floating lavender/purple blobs */
 .register-glow {
-  display: none;
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  z-index: 1;
+  opacity: 0.15;
+}
+.register-glow--1 {
+  width: 280px;
+  height: 280px;
+  background: var(--color-primary);
+  top: 10%;
+  left: -10%;
+}
+.register-glow--2 {
+  width: 320px;
+  height: 320px;
+  background: var(--color-secondary);
+  bottom: -10%;
+  right: -10%;
 }
 
 /* Artwork */
@@ -42,8 +60,9 @@
   box-shadow: var(--shadow-lg);
   transition: var(--transition-base);
 }
+
 .register-artwork:hover {
-  border-color: rgba(255, 255, 255, 0.15);
+  border-color: var(--color-border-hover);
 }
 
 /* -------------------------------------
@@ -56,6 +75,7 @@
   padding: var(--sp-6);
   position: relative;
   overflow-y: auto;
+  background: var(--color-bg);
 }
 
 .register-card {
@@ -64,7 +84,7 @@
   padding: var(--sp-8) var(--sp-6);
   background: var(--color-surface);
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-lg);
   box-shadow: var(--shadow-lg);
   margin: auto 0;
 }
@@ -80,7 +100,7 @@
 .strength-bar {
   flex: 1;
   height: 4px;
-  background: var(--color-surface-3);
+  background: var(--color-surface-2);
   border-radius: var(--radius-full);
   transition: var(--transition-base);
 }
@@ -110,9 +130,7 @@
 .check-wrap.items-start { align-items: flex-start; }
 .check-wrap.items-start input { margin-top: 2px; }
 
-/* -------------------------------------
-   Responsive
-   ------------------------------------- */
+/* Responsive */
 @media (max-width: 1024px) {
   .register-page {
     grid-template-columns: 1fr;

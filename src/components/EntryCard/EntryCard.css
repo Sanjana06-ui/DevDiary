@@ -13,14 +13,14 @@
 }
 
 .entry-card:hover {
-  border-color: rgba(255, 255, 255, 0.12);
+  border-color: var(--color-border-hover);
   box-shadow: var(--shadow-md);
   transform: translateY(-1px);
 }
 
 .entry-card--pinned {
-  border-color: rgba(37, 99, 235, 0.45);
-  background: linear-gradient(180deg, rgba(37, 99, 235, 0.02) 0%, rgba(0, 0, 0, 0) 100%), var(--color-surface);
+  border-color: rgba(124, 90, 237, 0.35);
+  background: linear-gradient(180deg, rgba(124, 90, 237, 0.02) 0%, transparent 100%), var(--color-surface);
 }
 
 .btn-icon-xs {
@@ -31,7 +31,7 @@
 }
 
 .btn-icon-xs:hover {
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--color-hover-overlay);
 }
 
 .entry-card .btn-icon {
